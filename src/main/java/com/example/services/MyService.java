@@ -1,10 +1,9 @@
-package rs.raf.demo.services;
-
+package com.example.services;
 
 import java.util.List;
 import java.util.Optional;
 
-public interface IService<T, ID> {
+public interface MyService<T, ID> {
     <S extends T> S save(S var1);
 
     Optional<T> findById(ID var1);
@@ -12,5 +11,4 @@ public interface IService<T, ID> {
     List<T> findAll();
 
     void deleteById(ID var1);
-
 }

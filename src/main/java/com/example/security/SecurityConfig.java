@@ -1,29 +1,26 @@
-package rs.raf.demo.configuration;
+package com.example.security;
 
+import com.example.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import rs.raf.demo.filters.JwtFilter;
-import rs.raf.demo.services.UserService;
 
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(prePostEnabled = true)
-public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
-
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private final UserService userService;
     private final JwtFilter jwtFilter;
 
     @Autowired
-    public SpringSecurityConfig(UserService userService, JwtFilter jwtFilter) {
+    public SecurityConfig(UserService userService, JwtFilter jwtFilter) {
         this.userService = userService;
         this.jwtFilter = jwtFilter;
     }
@@ -42,7 +39,12 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
                 .csrf()
                 .disable()
                 .authorizeRequests()
-                .antMatchers("/auth/**").permitAll()
+                .antMatchers("/auth").permitAll()
+                .antMatchers(HttpMethod.POST, "/users").hasAuthority("can_create_users")
+                .antMatchers(HttpMethod.GET, "/users").hasAuthority("can_read_users")
+                .antMatchers(HttpMethod.PUT, "/users/**").hasAuthority("can_update_users")
+                .antMatchers(HttpMethod.DELETE, "/users/**").hasAuthority("can_delete_users")
+//                .antMatchers("/users").permitAll()
                 .anyRequest().authenticated()
                 .and().sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
@@ -58,7 +60,6 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return NoOpPasswordEncoder.getInstance();
+        return new BCryptPasswordEncoder();
     }
-
 }
