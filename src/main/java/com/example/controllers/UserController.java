@@ -56,8 +56,6 @@ public class UserController {
     @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> updateUser(@RequestBody @Validated UserUpdateDto userUpdateDto) {
         Optional<User> optionalUser = userService.findById(userUpdateDto.getId());
-        System.out.println(optionalUser.get());
-        System.out.println(userUpdateDto);
 
         if (optionalUser.isPresent()) {
             User user = optionalUser.get();
