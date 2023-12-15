@@ -2,6 +2,7 @@ package com.example.controllers;
 
 import com.example.models.Permission;
 import com.example.models.User;
+import com.example.models.dto.UserUpdateDto;
 import com.example.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -53,9 +54,24 @@ public class UserController {
     }
 
     @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public User updateUser(@RequestBody @Validated User user) {
-        return userService.save(user);
+    public ResponseEntity<?> updateUser(@RequestBody @Validated UserUpdateDto userUpdateDto) {
+        Optional<User> optionalUser = userService.findById(userUpdateDto.getId());
+        System.out.println(optionalUser.get());
+        System.out.println(userUpdateDto);
+
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+            user.setFirstName(userUpdateDto.getFirstName());
+            user.setLastName(userUpdateDto.getLastName());
+            user.setEmail(userUpdateDto.getEmail());
+            user.setPermissions(userUpdateDto.getPermissions());
+
+            return ResponseEntity.ok(userService.save(user));
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
+
 
     @DeleteMapping(value = "/{userId}")
     public ResponseEntity<?> deleteUser(@PathVariable("userId") Long userId) {
