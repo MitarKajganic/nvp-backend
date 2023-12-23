@@ -1,6 +1,5 @@
 package com.example.controllers;
 
-import com.example.models.Permission;
 import com.example.models.User;
 import com.example.models.dto.UserUpdateDto;
 import com.example.services.UserService;
