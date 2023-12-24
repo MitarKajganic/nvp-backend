@@ -83,6 +83,7 @@ public class VacuumController {
                                 @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date dateFrom,
                                 @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date dateTo) {
 
+
         Long userId = userService.findByEmail(email).getId();
         Set<Vacuum> vacuums = new HashSet<>();
         List<Vacuum> results;
@@ -90,6 +91,7 @@ public class VacuumController {
         if (name != null && !name.isEmpty()) {
             results = vacuumService.findAllByNameContaining(name);
             filterAndAddResults(vacuums, results, userId);
+
         }
 
         if (statuses != null && !statuses.isEmpty()) {
@@ -104,7 +106,7 @@ public class VacuumController {
             LocalDateTime endDateTime = dateTo.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
 
             results = vacuumService.findAllByCreatedAtBetween(startDateTime, endDateTime);
-            vacuums.retainAll(new HashSet<>(results));
+            vacuums.addAll(results);
         }
 
         return new ArrayList<>(vacuums);
