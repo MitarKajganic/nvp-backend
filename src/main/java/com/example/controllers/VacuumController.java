@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @CrossOrigin
 @RestController
@@ -28,7 +29,7 @@ public class VacuumController {
 
     private final UserService userService;
 
-    
+    private final ConcurrentHashMap<Long, Boolean> pendingOperations = new ConcurrentHashMap<>();
 
     @Autowired
     public VacuumController(VacuumService vacuumService, UserService userService) {
@@ -72,6 +73,10 @@ public class VacuumController {
 
     @DeleteMapping(value = "/{vacuumId}")
     public ResponseEntity<?> deleteVacuum(@PathVariable("vacuumId") Long vacuumId) {
+        Optional<Vacuum> optionalVacuum = vacuumService.findById(vacuumId);
+        if (!optionalVacuum.isPresent()) return ResponseEntity.notFound().build();
+        Vacuum vacuum = optionalVacuum.get();
+        if (!vacuum.getStatus().equals(Status.STOPPED)) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Access Denied: Can't remove a vacuum that is not stopped");
         vacuumService.deleteById(vacuumId);
         return ResponseEntity.ok().build();
     }
@@ -118,37 +123,28 @@ public class VacuumController {
         }
     }
 
-    @PutMapping("/start/{id}")
-    public ResponseEntity<?> startVacuum(@PathVariable Long id) {
+    @PutMapping("/{action}/{id}")
+    public ResponseEntity<?> updateVacuumStatus(@PathVariable Long id, @PathVariable VacuumAction action) {
         try {
-            updateStatus(id, Status.RUNNING);
+            Optional<Vacuum> vacuumOptional = vacuumService.findById(id);
+            if (!vacuumOptional.isPresent()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            Vacuum vacuum = vacuumOptional.get();
+            if (!vacuum.getStatus().equals(action.getRequiredStatus())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body("Access Denied: Can't " + action.name().toLowerCase() + " a vacuum that is not " + action.getRequiredStatus().name().toLowerCase());
+            }
+
+            updateStatus(vacuum, action.getNewStatus());
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    @PutMapping("/stop/{id}")
-    public ResponseEntity<?> stopVacuum(@PathVariable Long id) {
-        try {
-            updateStatus(id, Status.STOPPED);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
-    @PutMapping("/discharge/{id}")
-    public ResponseEntity<?> dischargeVacuum(@PathVariable Long id) {
-        try {
-            updateStatus(id, Status.DISCHARGING);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
-    private void updateStatus(Long vacuumId, Status newStatus) {
+    private void updateStatus(Vacuum vacuum, Status newStatus) {
         // Call to service layer to update the vacuum status
         // This method should handle the actual updating logic, including checking current status,
         // validating the transition, and saving the updated vacuum.
