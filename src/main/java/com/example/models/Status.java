@@ -3,5 +3,7 @@ package com.example.models;
 public enum Status {
     ON,
     OFF,
-    DISCHARGING
+    DISCHARGING,
+    RUNNING,
+    STOPPED
 }

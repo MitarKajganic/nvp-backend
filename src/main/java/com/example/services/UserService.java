@@ -49,6 +49,11 @@ public class UserService implements MyService<User, Long>, UserDetailsService {
         return userRepository.findByEmail(email).isPresent();
     }
 
+    public User findByEmail(String email) {
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+        return optionalUser.orElse(null);
+    }
+
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         Optional<User> user = this.userRepository.findByEmail(email);

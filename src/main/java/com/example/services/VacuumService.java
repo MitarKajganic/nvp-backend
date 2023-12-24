@@ -1,12 +1,13 @@
 package com.example.services;
 
+import com.example.models.Status;
+import com.example.models.User;
 import com.example.models.Vacuum;
-import com.example.models.Vacuum;
-import com.example.repositories.VacuumRepository;
 import com.example.repositories.VacuumRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,5 +39,20 @@ public class VacuumService implements MyService<Vacuum, Long>{
     @Override
     public void deleteById(Long vacuumId) {
         vacuumRepository.deleteById(vacuumId);
+    }
+
+    public List<Vacuum> findAllByAddedBy(Long userId) {
+        return vacuumRepository.findAllByAddedBy(userId);
+    }
+
+    public List<Vacuum> findAllByNameContaining(String name) {
+        return vacuumRepository.findAllByNameContaining(name);
+    }
+
+    public List<Vacuum> findAllByStatus(Status status) {
+        return vacuumRepository.findAllByStatus(status);
+    }
+    public List<Vacuum> findAllByCreatedAtBetween(LocalDateTime startDateTime, LocalDateTime endDateTime) {
+        return vacuumRepository.findAllByCreatedAtBetween(startDateTime, endDateTime);
     }
 }
