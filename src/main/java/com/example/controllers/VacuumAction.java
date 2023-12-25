@@ -1,8 +1,10 @@
 package com.example.controllers;
 
 import com.example.models.Status;
+import lombok.Getter;
 
 
+@Getter
 public enum VacuumAction {
     START(Status.STOPPED, Status.RUNNING),
     STOP(Status.RUNNING, Status.STOPPED),
@@ -15,14 +17,4 @@ public enum VacuumAction {
         this.requiredStatus = requiredStatus;
         this.newStatus = newStatus;
     }
-
-    public Status getRequiredStatus() {
-        return requiredStatus;
-    }
-
-    public Status getNewStatus() {
-        return newStatus;
-    }
-
-
 }
