@@ -1,9 +1,9 @@
-package com.example.models;
+package com.example.models.entities;
 
+import com.example.models.enums.Permission;
 import lombok.Data;
 
 import javax.persistence.*;
-import java.util.HashSet;
 import java.util.Set;
 
 @Data

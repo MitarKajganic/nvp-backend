@@ -1,9 +1,8 @@
 package com.example.models.dto;
 
-import com.example.models.Permission;
+import com.example.models.enums.Permission;
 import lombok.Data;
 
-import javax.persistence.*;
 import java.util.Set;
 
 @Data

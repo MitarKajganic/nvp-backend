@@ -1,6 +1,6 @@
 package com.example.models;
 
-import com.example.controllers.VacuumAction;
+import com.example.models.enums.VacuumAction;
 import lombok.Data;
 
 @Data

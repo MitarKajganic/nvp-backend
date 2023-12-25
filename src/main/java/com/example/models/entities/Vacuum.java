@@ -1,5 +1,6 @@
-package com.example.models;
+package com.example.models.entities;
 
+import com.example.models.enums.Status;
 import lombok.Data;
 
 import javax.persistence.*;

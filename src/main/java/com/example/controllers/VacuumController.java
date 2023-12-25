@@ -1,10 +1,13 @@
 package com.example.controllers;
 
 import com.example.models.ScheduledVacuumOperation;
-import com.example.models.Status;
-import com.example.models.User;
-import com.example.models.Vacuum;
+import com.example.models.entities.ErrorMessage;
+import com.example.models.enums.Status;
+import com.example.models.entities.User;
+import com.example.models.entities.Vacuum;
 import com.example.models.dto.VacuumDto;
+import com.example.models.enums.VacuumAction;
+import com.example.services.ErrorMessageService;
 import com.example.services.UserService;
 import com.example.services.VacuumService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,13 +38,16 @@ public class VacuumController {
 
     private final TaskScheduler taskScheduler;
 
+    private final ErrorMessageService errorMessageService;
+
     private final ConcurrentHashMap<Long, Boolean> pendingOperations = new ConcurrentHashMap<>();
 
     @Autowired
-    public VacuumController(VacuumService vacuumService, UserService userService, TaskScheduler taskScheduler) {
+    public VacuumController(VacuumService vacuumService, UserService userService, TaskScheduler taskScheduler, ErrorMessageService errorMessageService) {
         this.vacuumService = vacuumService;
         this.userService = userService;
         this.taskScheduler = taskScheduler;
+        this.errorMessageService = errorMessageService;
     }
 
     @GetMapping(value = "/all", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -135,8 +141,7 @@ public class VacuumController {
     }
 
     private void performOperation(ScheduledVacuumOperation operation) {
-        ResponseEntity<?> response = updateVacuumStatus(operation.getVacuumId(), operation.getAction());
-        // Log the response or handle it as needed
+        updateVacuumStatus(operation.getVacuumId(), operation.getAction());
     }
 
     private String generateCronExpression(Date executionDate) {
@@ -167,17 +172,38 @@ public class VacuumController {
         Optional<Vacuum> vacuumOptional = vacuumService.findById(id);
 
         if (!vacuumOptional.isPresent()) {
+            ErrorMessage errorMessage = new ErrorMessage();
+            errorMessage.setVacuumId(id);
+            errorMessage.setMessage("Vacuum not found");
+            errorMessage.setAction(action);
+            errorMessageService.save(errorMessage);
+
             return ResponseEntity.notFound().build();
         }
 
         Vacuum vacuum = vacuumOptional.get();
         if (!vacuum.getStatus().equals(action.getRequiredStatus())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("Access Denied: Can't " + action.name().toLowerCase() + " a vacuum that is not " + action.getRequiredStatus().name().toLowerCase());
+            String error = "Access Denied: Can't " + action.name().toLowerCase() + " a vacuum that is not " + action.getRequiredStatus().name().toLowerCase();
+
+            ErrorMessage errorMessage = new ErrorMessage();
+            errorMessage.setVacuumId(id);
+            errorMessage.setMessage(error);
+            errorMessage.setAction(action);
+            errorMessageService.save(errorMessage);
+
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
         }
 
         if (pendingOperations.putIfAbsent(id, true) != null) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Vacuum operation already in progress");
+            String error = "Vacuum operation already in progress";
+
+            ErrorMessage errorMessage = new ErrorMessage();
+            errorMessage.setVacuumId(id);
+            errorMessage.setMessage(error);
+            errorMessage.setAction(action);
+            errorMessageService.save(errorMessage);
+
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
         }
 
         if (action.getNewStatus().equals(Status.RUNNING)) vacuum.setCycle(vacuum.getCycle() + 1);

@@ -1,5 +1,6 @@
-package com.example.models;
+package com.example.models.entities;
 
+import com.example.models.enums.VacuumAction;
 import lombok.Data;
 
 import javax.persistence.*;
@@ -12,9 +13,14 @@ public class ErrorMessage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private LocalDateTime timestamp;
+
     private Long vacuumId;
-    private String operation;
+    private VacuumAction action;
     private String message;
+
+    @PrePersist
+    public void prePersist() {
+        timestamp = LocalDateTime.now();
+    }
 }

@@ -1,12 +1,4 @@
-package com.example.models;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import lombok.Data;
-
-import javax.persistence.*;
-import java.util.HashSet;
-import java.util.Set;
+package com.example.models.enums;
 
 public enum Permission {
     can_create_users,

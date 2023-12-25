@@ -1,6 +1,6 @@
 package com.example.repositories;
 
-import com.example.models.User;
+import com.example.models.entities.User;
 import org.springframework.data.repository.CrudRepository;
 
 import java.util.Optional;

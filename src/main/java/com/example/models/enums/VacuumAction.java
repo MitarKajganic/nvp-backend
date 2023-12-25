@@ -1,6 +1,5 @@
-package com.example.controllers;
+package com.example.models.enums;
 
-import com.example.models.Status;
 import lombok.Getter;
 
 

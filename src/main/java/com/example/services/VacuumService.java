@@ -1,8 +1,8 @@
 package com.example.services;
 
-import com.example.models.Status;
-import com.example.models.User;
-import com.example.models.Vacuum;
+import com.example.models.enums.Status;
+import com.example.models.entities.Vacuum;
+import com.example.repositories.MyService;
 import com.example.repositories.VacuumRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class VacuumService implements MyService<Vacuum, Long>{
+public class VacuumService implements MyService<Vacuum, Long> {
 
     private final VacuumRepository vacuumRepository;
 
@@ -41,10 +41,6 @@ public class VacuumService implements MyService<Vacuum, Long>{
         vacuumRepository.deleteById(vacuumId);
     }
 
-    public List<Vacuum> findAllByAddedBy(Long userId) {
-        return vacuumRepository.findAllByAddedBy(userId);
-    }
-
     public List<Vacuum> findAllByNameContaining(String name) {
         return vacuumRepository.findAllByNameContaining(name);
     }
@@ -52,6 +48,7 @@ public class VacuumService implements MyService<Vacuum, Long>{
     public List<Vacuum> findAllByStatus(Status status) {
         return vacuumRepository.findAllByStatus(status);
     }
+
     public List<Vacuum> findAllByCreatedAtBetween(LocalDateTime startDateTime, LocalDateTime endDateTime) {
         return vacuumRepository.findAllByCreatedAtBetween(startDateTime, endDateTime);
     }

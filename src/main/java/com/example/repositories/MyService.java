@@ -1,4 +1,4 @@
-package com.example.services;
+package com.example.repositories;
 
 import java.util.List;
 import java.util.Optional;

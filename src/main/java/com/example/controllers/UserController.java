@@ -1,6 +1,6 @@
 package com.example.controllers;
 
-import com.example.models.User;
+import com.example.models.entities.User;
 import com.example.models.dto.UserUpdateDto;
 import com.example.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,7 +68,6 @@ public class UserController {
             return ResponseEntity.notFound().build();
         }
     }
-
 
     @DeleteMapping(value = "/{userId}")
     public ResponseEntity<?> deleteUser(@PathVariable("userId") Long userId) {
