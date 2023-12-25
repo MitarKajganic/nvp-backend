@@ -23,4 +23,6 @@ public enum VacuumAction {
     public Status getNewStatus() {
         return newStatus;
     }
+
+
 }

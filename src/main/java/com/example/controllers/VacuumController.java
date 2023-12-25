@@ -3,8 +3,7 @@ package com.example.controllers;
 import com.example.models.Status;
 import com.example.models.User;
 import com.example.models.Vacuum;
-import com.example.models.Vacuum;
-import com.example.models.dto.UserUpdateDto;
+import com.example.models.dto.VacuumDto;
 import com.example.services.UserService;
 import com.example.services.VacuumService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,9 +53,14 @@ public class VacuumController {
     @PostMapping(value = "/{email}",
                  consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> createVacuum( @PathVariable("email") String email,
-                                                @RequestBody @Validated Vacuum vacuum) {
+                                                @RequestBody @Validated VacuumDto vacuumDto) {
         User user = userService.findByEmail(email);
+        Vacuum vacuum = new Vacuum();
+        vacuum.setName(vacuumDto.getName());
         vacuum.setAddedBy(user.getId());
+        vacuum.setStatus(Status.STOPPED);
+        vacuum.setCycle(0);
+        vacuum.setActive(true);
         return ResponseEntity.ok(vacuumService.save(vacuum));
     }
 
@@ -77,7 +81,8 @@ public class VacuumController {
         if (!optionalVacuum.isPresent()) return ResponseEntity.notFound().build();
         Vacuum vacuum = optionalVacuum.get();
         if (!vacuum.getStatus().equals(Status.STOPPED)) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Access Denied: Can't remove a vacuum that is not stopped");
-        vacuumService.deleteById(vacuumId);
+        vacuum.setActive(false);
+        vacuumService.save(vacuum);
         return ResponseEntity.ok().build();
     }
 
@@ -96,7 +101,6 @@ public class VacuumController {
         if (name != null && !name.isEmpty()) {
             results = vacuumService.findAllByNameContaining(name);
             filterAndAddResults(vacuums, results, userId);
-
         }
 
         if (statuses != null && !statuses.isEmpty()) {
@@ -137,17 +141,46 @@ public class VacuumController {
                         .body("Access Denied: Can't " + action.name().toLowerCase() + " a vacuum that is not " + action.getRequiredStatus().name().toLowerCase());
             }
 
-            updateStatus(vacuum, action.getNewStatus());
+            if (pendingOperations.putIfAbsent(id, true) != null) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Vacuum operation already in progress");
+            }
+
+            if (action.getNewStatus().equals(Status.RUNNING)) vacuum.setCycle(vacuum.getCycle() + 1);
+
+            Thread thread = new Thread(() -> updateStatus(vacuum, action));
+            thread.start();
+
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    private void updateStatus(Vacuum vacuum, Status newStatus) {
-        // Call to service layer to update the vacuum status
-        // This method should handle the actual updating logic, including checking current status,
-        // validating the transition, and saving the updated vacuum.
-//        vacuumService.updateVacuumStatus(vacuumId, newStatus);
+    private void updateStatus(Vacuum vacuum, VacuumAction action) {
+        try {
+            int totalSleepTime = 15000 + (int)(Math.random() * 5000);
+            Thread.sleep(totalSleepTime);
+            vacuum.setStatus(action.getNewStatus());
+            vacuumService.save(vacuum);
+
+            if (action.getNewStatus().equals(Status.STOPPED) && vacuum.getCycle() % 3 == 0) {
+                Thread.sleep(totalSleepTime);
+                vacuum.setStatus(Status.DISCHARGING);
+                vacuumService.save(vacuum);
+
+                Thread.sleep(totalSleepTime);
+                vacuum.setStatus(Status.STOPPED);
+                vacuumService.save(vacuum);
+            } else if (action.getNewStatus().equals(Status.DISCHARGING)) {
+                Thread.sleep(totalSleepTime);
+                vacuum.setStatus(Status.STOPPED);
+                vacuumService.save(vacuum);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Thread was interrupted", e);
+        } finally {
+            pendingOperations.remove(vacuum.getId());
+        }
     }
 }
