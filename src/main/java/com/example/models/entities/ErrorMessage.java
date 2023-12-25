@@ -16,6 +16,7 @@ public class ErrorMessage {
     private LocalDateTime timestamp;
 
     private Long vacuumId;
+    @Enumerated(EnumType.STRING)
     private VacuumAction action;
     private String message;
 

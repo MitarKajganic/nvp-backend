@@ -34,9 +34,4 @@ public class ErrorMessageController {
         }
         return ResponseEntity.notFound().build();
     }
-
-    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Object> createErrorMessage(@RequestBody @Validated ErrorMessage errorMessage) {
-        return ResponseEntity.ok(errorMessageService.save(errorMessage));
-    }
 }

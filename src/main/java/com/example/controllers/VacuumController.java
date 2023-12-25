@@ -24,6 +24,8 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -119,22 +121,25 @@ public class VacuumController {
     }
 
     @PostMapping("/schedule")
-    public ResponseEntity<?> scheduleVacuumOperation(@RequestBody ScheduledVacuumOperation operation) {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm");
+    public ResponseEntity<?> scheduleVacuumOperation(@RequestBody @Validated ScheduledVacuumOperation operation) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm");
         try {
-            Date scheduledDate = dateFormat.parse(operation.getScheduledDateTime());
-            if (scheduledDate.after(new Date())) {
-                String cronExpression = generateCronExpression(scheduledDate);
+            LocalDateTime scheduledDateTime = LocalDateTime.parse(operation.getScheduledDateTime(), formatter);
+            LocalDateTime now = LocalDateTime.now();
+
+            if (scheduledDateTime.isAfter(now)) {
+                String cronExpression = generateCronExpression(scheduledDateTime);
                 scheduleTask(operation, cronExpression);
                 return ResponseEntity.ok("Operation scheduled successfully.");
             } else {
                 return ResponseEntity.badRequest().body("Scheduled date has passed or is the same as the current date.");
             }
-        } catch (ParseException e) {
+        } catch (DateTimeParseException e) {
             e.printStackTrace();
-            return ResponseEntity.badRequest().body("Failed to parse date.");
+            return ResponseEntity.badRequest().body("Failed to parse date. Ensure it's in MM/dd/yyyy HH:mm format.");
         }
     }
+
 
     private void scheduleTask(ScheduledVacuumOperation operation, String cronExpression) {
         taskScheduler.schedule(() -> performOperation(operation), new CronTrigger(cronExpression));
@@ -144,17 +149,14 @@ public class VacuumController {
         updateVacuumStatus(operation.getVacuumId(), operation.getAction());
     }
 
-    private String generateCronExpression(Date executionDate) {
-        SimpleDateFormat minuteFormat = new SimpleDateFormat("mm");
-        SimpleDateFormat hourFormat = new SimpleDateFormat("HH");
-        SimpleDateFormat dayFormat = new SimpleDateFormat("dd");
-        SimpleDateFormat monthFormat = new SimpleDateFormat("MM");
-
-        return String.format("0 %s %s %s %s ?", minuteFormat.format(executionDate),
-                                                hourFormat.format(executionDate),
-                                                dayFormat.format(executionDate),
-                                                monthFormat.format(executionDate));
+    private String generateCronExpression(LocalDateTime executionDateTime) {
+        return String.format("0 %d %d %d %d ?",
+                executionDateTime.getMinute(),
+                executionDateTime.getHour(),
+                executionDateTime.getDayOfMonth(),
+                executionDateTime.getMonthValue());
     }
+
 
     @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> updateVacuum(@RequestBody @Validated Vacuum vacuum) {
