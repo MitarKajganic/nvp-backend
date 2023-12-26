@@ -17,6 +17,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -65,21 +68,16 @@ public class VacuumController {
     }
 
     @GetMapping("/search")
-    public List<Vacuum> search( @RequestParam String email,
-                                @RequestParam(required = false) String name,
+    public List<Vacuum> search( @RequestParam(required = false) String name,
                                 @RequestParam(required = false) List<String> statuses,
                                 @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date dateFrom,
                                 @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date dateTo) {
 
-
-        Long userId = userService.findByEmail(email).getId();
+        Long userId = userService.findByEmail(loadEmail()).getId();
         Set<Vacuum> vacuums = new HashSet<>();
         List<Vacuum> results;
 
-        if ((name == null || name.isEmpty()) &&
-                (statuses == null || statuses.isEmpty()) &&
-                (dateFrom == null) &&
-                (dateTo == null)) {
+        if ((name == null || name.isEmpty()) && (statuses == null || statuses.isEmpty()) && (dateFrom == null) && (dateTo == null)) {
             return vacuumService.findAllByAddedBy(userId);
         }
 
@@ -113,9 +111,8 @@ public class VacuumController {
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Object> createVacuum( @RequestParam("email") String email,
-                                                @RequestBody @Validated VacuumDto vacuumDto) {
-        User user = userService.findByEmail(email);
+    public ResponseEntity<Object> createVacuum( @RequestBody @Validated VacuumDto vacuumDto) {
+        User user = userService.findByEmail(loadEmail());
         Vacuum vacuum = new Vacuum();
         vacuum.setName(vacuumDto.getName());
         vacuum.setAddedBy(user.getId());
@@ -260,5 +257,20 @@ public class VacuumController {
         vacuum.setActive(false);
         vacuumService.save(vacuum);
         return ResponseEntity.ok().build();
+    }
+
+    private String loadEmail() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = null;
+
+        if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
+            email = ((UserDetails) authentication.getPrincipal()).getUsername();
+        }
+
+        if (email == null) {
+            throw new IllegalStateException("User email not found in JWT");
+        }
+
+        return email;
     }
 }
