@@ -20,8 +20,6 @@ import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -77,6 +75,13 @@ public class VacuumController {
         Long userId = userService.findByEmail(email).getId();
         Set<Vacuum> vacuums = new HashSet<>();
         List<Vacuum> results;
+
+        if ((name == null || name.isEmpty()) &&
+                (statuses == null || statuses.isEmpty()) &&
+                (dateFrom == null) &&
+                (dateTo == null)) {
+            return vacuumService.findAllByAddedBy(userId);
+        }
 
         if (name != null && !name.isEmpty()) {
             results = vacuumService.findAllByNameContaining(name);

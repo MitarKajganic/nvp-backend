@@ -9,6 +9,8 @@ import java.util.List;
 
 public interface VacuumRepository extends CrudRepository<Vacuum, Long> {
 
+    List<Vacuum> findAllByAddedBy(Long userId);
+
     List<Vacuum> findAllByNameContaining(String name);
 
     List<Vacuum> findAllByStatus(Status status);

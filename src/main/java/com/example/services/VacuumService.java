@@ -45,6 +45,10 @@ public class VacuumService implements MyService<Vacuum, Long> {
         return vacuumRepository.findAllByNameContaining(name);
     }
 
+    public List<Vacuum> findAllByAddedBy(Long userId) {
+        return vacuumRepository.findAllByAddedBy(userId);
+    }
+
     public List<Vacuum> findAllByStatus(Status status) {
         return vacuumRepository.findAllByStatus(status);
     }
