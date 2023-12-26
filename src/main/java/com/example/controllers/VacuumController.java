@@ -182,6 +182,21 @@ public class VacuumController {
         }
 
         Vacuum vacuum = vacuumOptional.get();
+        Long userId = userService.findByEmail(loadEmail()).getId();
+
+        if (!vacuum.getAddedBy().equals(userId)) {
+            String error = "Access Denied: Vacuum doesn't exist or doesn't belong to user";
+
+            ErrorMessage errorMessage = new ErrorMessage();
+            errorMessage.setVacuumId(id);
+            errorMessage.setMessage(error);
+            errorMessage.setAction(action);
+            errorMessage.setVacuumName("null");
+            errorMessageService.save(errorMessage);
+
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+        }
+
         if (!vacuum.getStatus().equals(action.getRequiredStatus())) {
             String error = "Access Denied: Can't " + action.name().toLowerCase() + " a vacuum that is not " + action.getRequiredStatus().name().toLowerCase();
 
