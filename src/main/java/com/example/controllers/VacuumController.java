@@ -29,6 +29,8 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @CrossOrigin
 @RestController
@@ -68,41 +70,34 @@ public class VacuumController {
     }
 
     @GetMapping("/search")
-    public List<Vacuum> search( @RequestParam(required = false) String name,
-                                @RequestParam(required = false) List<String> statuses,
-                                @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date dateFrom,
-                                @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date dateTo) {
+    public List<Vacuum> search(@RequestParam(required = false) String name,
+                               @RequestParam(required = false) List<String> statuses,
+                               @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date dateFrom,
+                               @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date dateTo) {
 
         Long userId = userService.findByEmail(loadEmail()).getId();
-        Set<Vacuum> vacuums = new HashSet<>();
-        List<Vacuum> results;
 
-        if ((name == null || name.isEmpty()) && (statuses == null || statuses.isEmpty()) && (dateFrom == null) && (dateTo == null)) {
-            return vacuumService.findAllByAddedBy(userId);
-        }
+        Stream<Vacuum> vacuumStream = vacuumService.findAllByAddedBy(userId).stream();
 
         if (name != null && !name.isEmpty()) {
-            results = vacuumService.findAllByNameContaining(name);
-            filterAndAddResults(vacuums, results, userId);
+            vacuumStream = vacuumStream.filter(vacuum -> vacuum.getName().contains(name));
         }
 
         if (statuses != null && !statuses.isEmpty()) {
-            for (String status : statuses) {
-                results = vacuumService.findAllByStatus(Status.valueOf(status));
-                filterAndAddResults(vacuums, results, userId);
-            }
+            Set<Status> statusSet = statuses.stream().map(Status::valueOf).collect(Collectors.toSet());
+            vacuumStream = vacuumStream.filter(vacuum -> statusSet.contains(vacuum.getStatus()));
         }
 
         if (dateFrom != null && dateTo != null) {
             LocalDateTime startDateTime = dateFrom.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
             LocalDateTime endDateTime = dateTo.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-
-            results = vacuumService.findAllByCreatedAtBetween(startDateTime, endDateTime);
-            vacuums.addAll(results);
+            vacuumStream = vacuumStream.filter(vacuum ->
+                    !vacuum.getCreatedAt().isBefore(startDateTime) && !vacuum.getCreatedAt().isAfter(endDateTime));
         }
 
-        return new ArrayList<>(vacuums);
+        return vacuumStream.collect(Collectors.toList());
     }
+
 
     private void filterAndAddResults(Set<Vacuum> vacuums, List<Vacuum> results, Long userId) {
         for (Vacuum vacuum : results) {
@@ -198,8 +193,20 @@ public class VacuumController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
         }
 
+        if (!vacuum.isActive()) {
+            String error = "Access Denied: Vacuum is disabled";
+
+            ErrorMessage errorMessage = new ErrorMessage();
+            errorMessage.setVacuumId(id);
+            errorMessage.setMessage(error);
+            errorMessage.setAction(action);
+            errorMessageService.save(errorMessage);
+
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+        }
+
         if (pendingOperations.putIfAbsent(id, true) != null) {
-            String error = "Vacuum operation already in progress";
+            String error = "Access Denied: Vacuum operation already in progress";
 
             ErrorMessage errorMessage = new ErrorMessage();
             errorMessage.setVacuumId(id);
