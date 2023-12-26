@@ -175,6 +175,7 @@ public class VacuumController {
             errorMessage.setVacuumId(id);
             errorMessage.setMessage("Vacuum not found");
             errorMessage.setAction(action);
+            errorMessage.setVacuumName("null");
             errorMessageService.save(errorMessage);
 
             return ResponseEntity.notFound().build();
@@ -188,6 +189,7 @@ public class VacuumController {
             errorMessage.setVacuumId(id);
             errorMessage.setMessage(error);
             errorMessage.setAction(action);
+            errorMessage.setVacuumName(vacuum.getName());
             errorMessageService.save(errorMessage);
 
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
@@ -200,6 +202,7 @@ public class VacuumController {
             errorMessage.setVacuumId(id);
             errorMessage.setMessage(error);
             errorMessage.setAction(action);
+            errorMessage.setVacuumName(vacuum.getName());
             errorMessageService.save(errorMessage);
 
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
@@ -212,6 +215,7 @@ public class VacuumController {
             errorMessage.setVacuumId(id);
             errorMessage.setMessage(error);
             errorMessage.setAction(action);
+            errorMessage.setVacuumName(vacuum.getName());
             errorMessageService.save(errorMessage);
 
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
