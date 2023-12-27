@@ -17,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
+import org.springframework.security.concurrent.DelegatingSecurityContextRunnable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -120,6 +121,7 @@ public class VacuumController {
     @PostMapping("/schedule")
     public ResponseEntity<?> scheduleVacuumOperation(@RequestBody @Validated ScheduledVacuumOperation operation) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm");
+
         try {
             LocalDateTime scheduledDateTime = LocalDateTime.parse(operation.getScheduledDateTime(), formatter);
             LocalDateTime now = LocalDateTime.now();
@@ -139,8 +141,11 @@ public class VacuumController {
 
 
     private void scheduleTask(ScheduledVacuumOperation operation, String cronExpression) {
-        taskScheduler.schedule(() -> performOperation(operation), new CronTrigger(cronExpression));
+        Runnable task = () -> performOperation(operation);
+        Runnable securityContextTask = new DelegatingSecurityContextRunnable(task);
+        taskScheduler.schedule(securityContextTask, new CronTrigger(cronExpression));
     }
+
 
     private void performOperation(ScheduledVacuumOperation operation) {
         updateVacuumStatus(operation.getVacuumId(), operation.getAction());
