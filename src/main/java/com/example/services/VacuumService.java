@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PreDestroy;
 import javax.persistence.OptimisticLockException;
@@ -78,6 +79,7 @@ public class VacuumService implements MyService<Vacuum, Long> {
         return vacuumRepository.findAllByCreatedAtBetween(startDateTime, endDateTime);
     }
 
+    @Transactional
     public ResponseEntity<?> updateVacuumStatus(Long id, VacuumAction action, String userEmail) {
         try {
             Optional<Vacuum> vacuumOptional = findById(id);
