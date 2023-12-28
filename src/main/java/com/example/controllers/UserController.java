@@ -54,19 +54,7 @@ public class UserController {
 
     @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> updateUser(@RequestBody @Validated UserUpdateDto userUpdateDto) {
-        Optional<User> optionalUser = userService.findById(userUpdateDto.getId());
-
-        if (optionalUser.isPresent()) {
-            User user = optionalUser.get();
-            user.setFirstName(userUpdateDto.getFirstName());
-            user.setLastName(userUpdateDto.getLastName());
-            user.setEmail(userUpdateDto.getEmail());
-            user.setPermissions(userUpdateDto.getPermissions());
-
-            return ResponseEntity.ok(userService.save(user));
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+        return userService.updateUser(userUpdateDto);
     }
 
     @DeleteMapping(value = "/{userId}")

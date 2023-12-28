@@ -22,6 +22,9 @@ public class User {
     @Column(unique = true)
     private String email;
 
+    @Version
+    private Integer version;
+
     private String passwordHash;
 
     @ElementCollection(targetClass = Permission.class, fetch = FetchType.EAGER)

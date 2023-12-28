@@ -24,6 +24,9 @@ public class Vacuum {
 
     private boolean active;
 
+    @Version
+    private Long version;
+
     private int cycle;
 
     @Column(name = "created_at", nullable = false, updatable = false)

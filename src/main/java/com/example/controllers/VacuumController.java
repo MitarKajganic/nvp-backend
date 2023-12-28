@@ -1,13 +1,11 @@
 package com.example.controllers;
 
 import com.example.models.ScheduledVacuumOperation;
-import com.example.models.entities.ErrorMessage;
 import com.example.models.enums.Status;
 import com.example.models.entities.User;
 import com.example.models.entities.Vacuum;
 import com.example.models.dto.VacuumDto;
 import com.example.models.enums.VacuumAction;
-import com.example.services.ErrorMessageService;
 import com.example.services.UserService;
 import com.example.services.VacuumService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,16 +42,13 @@ public class VacuumController {
 
     private final TaskScheduler taskScheduler;
 
-    private final ErrorMessageService errorMessageService;
-
     private final ConcurrentHashMap<Long, Boolean> pendingOperations = new ConcurrentHashMap<>();
 
     @Autowired
-    public VacuumController(VacuumService vacuumService, UserService userService, TaskScheduler taskScheduler, ErrorMessageService errorMessageService) {
+    public VacuumController(VacuumService vacuumService, UserService userService, TaskScheduler taskScheduler) {
         this.vacuumService = vacuumService;
         this.userService = userService;
         this.taskScheduler = taskScheduler;
-        this.errorMessageService = errorMessageService;
     }
 
     @GetMapping(value = "/all", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -173,110 +168,7 @@ public class VacuumController {
 
     @PutMapping("/{action}/{id}")
     public ResponseEntity<?> updateVacuumStatus(@PathVariable Long id, @PathVariable VacuumAction action) {
-        Optional<Vacuum> vacuumOptional = vacuumService.findById(id);
-
-        if (!vacuumOptional.isPresent()) {
-            ErrorMessage errorMessage = new ErrorMessage();
-            errorMessage.setVacuumId(id);
-            errorMessage.setMessage("Vacuum not found");
-            errorMessage.setAction(action);
-            errorMessage.setVacuumName("null");
-            errorMessageService.save(errorMessage);
-
-            return ResponseEntity.notFound().build();
-        }
-
-        Vacuum vacuum = vacuumOptional.get();
-        Long userId = userService.findByEmail(loadEmail()).getId();
-
-        if (!vacuum.getAddedBy().equals(userId)) {
-            String error = "Access Denied: Vacuum doesn't exist or doesn't belong to user";
-
-            ErrorMessage errorMessage = new ErrorMessage();
-            errorMessage.setVacuumId(id);
-            errorMessage.setMessage(error);
-            errorMessage.setAction(action);
-            errorMessage.setVacuumName("null");
-            errorMessageService.save(errorMessage);
-
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
-        }
-
-        if (!vacuum.getStatus().equals(action.getRequiredStatus())) {
-            String error = "Access Denied: Can't " + action.name().toLowerCase() + " a vacuum that is not " + action.getRequiredStatus().name().toLowerCase();
-
-            ErrorMessage errorMessage = new ErrorMessage();
-            errorMessage.setVacuumId(id);
-            errorMessage.setMessage(error);
-            errorMessage.setAction(action);
-            errorMessage.setVacuumName(vacuum.getName());
-            errorMessageService.save(errorMessage);
-
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
-        }
-
-        if (!vacuum.isActive()) {
-            String error = "Access Denied: Vacuum is disabled";
-
-            ErrorMessage errorMessage = new ErrorMessage();
-            errorMessage.setVacuumId(id);
-            errorMessage.setMessage(error);
-            errorMessage.setAction(action);
-            errorMessage.setVacuumName(vacuum.getName());
-            errorMessageService.save(errorMessage);
-
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
-        }
-
-        if (pendingOperations.putIfAbsent(id, true) != null) {
-            String error = "Access Denied: Vacuum operation already in progress";
-
-            ErrorMessage errorMessage = new ErrorMessage();
-            errorMessage.setVacuumId(id);
-            errorMessage.setMessage(error);
-            errorMessage.setAction(action);
-            errorMessage.setVacuumName(vacuum.getName());
-            errorMessageService.save(errorMessage);
-
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
-        }
-
-        if (action.getNewStatus().equals(Status.RUNNING)) vacuum.setCycle(vacuum.getCycle() + 1);
-
-        Thread thread = new Thread(() -> updateStatus(vacuum, action));
-        thread.start();
-
-        return ResponseEntity.ok().build();
-    }
-
-    private void updateStatus(Vacuum vacuum, VacuumAction action) {
-        try {
-            int totalSleepTime = 15000 + (int)(Math.random() * 5000);
-            Thread.sleep(totalSleepTime);
-            vacuum.setStatus(action.getNewStatus());
-            vacuumService.save(vacuum);
-
-            if (action.getNewStatus().equals(Status.STOPPED) && vacuum.getCycle() == 3) {
-                Thread.sleep(totalSleepTime);
-                vacuum.setStatus(Status.DISCHARGING);
-                vacuumService.save(vacuum);
-
-                Thread.sleep(totalSleepTime);
-                vacuum.setStatus(Status.STOPPED);
-                vacuum.setCycle(0);
-                vacuumService.save(vacuum);
-            } else if (action.getNewStatus().equals(Status.DISCHARGING)) {
-                Thread.sleep(totalSleepTime);
-                vacuum.setStatus(Status.STOPPED);
-                vacuum.setCycle(0);
-                vacuumService.save(vacuum);
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Thread was interrupted", e);
-        } finally {
-            pendingOperations.remove(vacuum.getId());
-        }
+        return vacuumService.updateVacuumStatus(id, action, loadEmail());
     }
 
     @DeleteMapping(value = "/{vacuumId}")
