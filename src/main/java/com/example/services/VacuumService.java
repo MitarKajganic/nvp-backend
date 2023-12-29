@@ -121,22 +121,30 @@ public class VacuumService implements MyService<Vacuum, Long> {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(message);
     }
 
+
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     private void updateStatus(Vacuum vacuum, VacuumAction action, Long id) {
         try {
             int totalSleepTime = 15000 + (int) (Math.random() * 5000);
             Thread.sleep(totalSleepTime);
             vacuum.setStatus(action.getNewStatus());
             save(vacuum);
+            vacuum = vacuumRepository.findById(vacuum.getId()).get();
+
 
             if (action.getNewStatus().equals(Status.STOPPED) && vacuum.getCycle() == 3) {
+                System.out.println("OVDE");
                 Thread.sleep(totalSleepTime);
                 vacuum.setStatus(Status.DISCHARGING);
                 vacuum.setCycle(0);
                 save(vacuum);
+                vacuum = vacuumRepository.findById(vacuum.getId()).get();
+                System.out.println("OVDE 2");
 
                 Thread.sleep(totalSleepTime);
                 vacuum.setStatus(Status.STOPPED);
                 save(vacuum);
+                System.out.println("OVDE 3");
             } else if (action.getNewStatus().equals(Status.DISCHARGING)) {
                 Thread.sleep(totalSleepTime);
                 vacuum.setStatus(Status.STOPPED);
