@@ -121,7 +121,6 @@ public class VacuumService implements MyService<Vacuum, Long> {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(message);
     }
 
-
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     private void updateStatus(Vacuum vacuum, VacuumAction action, Long id) {
         try {
@@ -129,21 +128,21 @@ public class VacuumService implements MyService<Vacuum, Long> {
             Thread.sleep(totalSleepTime);
             vacuum.setStatus(action.getNewStatus());
             save(vacuum);
-            vacuum = vacuumRepository.findById(vacuum.getId()).get();
-
 
             if (action.getNewStatus().equals(Status.STOPPED) && vacuum.getCycle() == 3) {
                 Thread.sleep(totalSleepTime);
+                vacuum = vacuumRepository.findById(vacuum.getId()).get();
                 vacuum.setStatus(Status.DISCHARGING);
                 vacuum.setCycle(0);
                 save(vacuum);
-                vacuum = vacuumRepository.findById(vacuum.getId()).get();
 
                 Thread.sleep(totalSleepTime);
+                vacuum = vacuumRepository.findById(vacuum.getId()).get();
                 vacuum.setStatus(Status.STOPPED);
                 save(vacuum);
             } else if (action.getNewStatus().equals(Status.DISCHARGING)) {
                 Thread.sleep(totalSleepTime);
+                vacuum = vacuumRepository.findById(vacuum.getId()).get();
                 vacuum.setStatus(Status.STOPPED);
                 vacuum.setCycle(0);
                 save(vacuum);
